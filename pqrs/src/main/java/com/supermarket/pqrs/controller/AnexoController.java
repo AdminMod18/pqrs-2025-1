@@ -5,6 +5,7 @@ import com.supermarket.pqrs.service.AnexoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -44,4 +45,17 @@ public class AnexoController {
         anexoService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/upload")
+    public ResponseEntity<Anexo> uploadFile(@RequestParam("file") MultipartFile file) {
+        try {
+            Anexo anexo = anexoService.uploadFile(file);
+            return ResponseEntity.ok(anexo);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+
+
 }
