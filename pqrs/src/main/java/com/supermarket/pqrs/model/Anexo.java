@@ -14,7 +14,12 @@ public class Anexo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Nombre del archivo subido
     private String nombreArchivo;
 
+    // Ruta donde se guarda el archivo en el sistema de archivos
     private String rutaArchivo;
+
+    // Tipo de archivo (por ejemplo, PDF, JPG, etc.)
+    private String tipoArchivo;
 }
