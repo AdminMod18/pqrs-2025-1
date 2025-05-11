@@ -38,7 +38,7 @@ public class UsuarioService {
         usuarioRepository.deleteById(id);
     }
 
-    // 🔐 Método para crear usuario con encriptación y asignación de roles
+    // Método para crear usuario con encriptación y asignación de roles
     public Usuario crearNuevoUsuario(String username, String rawPassword, Set<Rol> roles) {
         Usuario usuario = new Usuario();
         usuario.setUsername(username);
