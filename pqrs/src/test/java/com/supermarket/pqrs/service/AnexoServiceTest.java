@@ -126,6 +126,4 @@ class AnexoServiceTest {
         Exception ex = assertThrows(IllegalArgumentException.class, () -> anexoService.uploadFile(emptyFile));
         assertEquals("El archivo está vacío", ex.getMessage());
     }
-
-
 }
