@@ -1,0 +1,31 @@
+name: CI - Build and Test
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🔄 Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: ☕ Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 17
+
+      - name: 🧪 Construir y correr pruebas
+        run: mvn clean test
+
+      - name: 📊 Publicar cobertura con JaCoCo (si usas cobertura)
+        if: always()
+        run: mvn jacoco:report
+
+      - name: ✅ Verificar calidad del código
+        run: mvn checkstyle:check
