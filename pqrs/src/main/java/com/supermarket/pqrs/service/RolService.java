@@ -27,20 +27,19 @@ public class RolService {
     }
 
     public Rol save(Rol rol) {
-        try {
-            // Validación: no permitir duplicados
-            Optional<Rol> existente = rolRepository.findByNombre(rol.getNombre());
-            if (existente.isPresent() && !existente.get().getId().equals(rol.getId())) {
-                throw new IllegalArgumentException("Ya existe un rol con el nombre: " + rol.getNombre());
-            }
+        // Validación: no permitir duplicados
+        Optional<Rol> existente = rolRepository.findByNombre(rol.getNombre());
+        if (existente.isPresent() && !existente.get().getId().equals(rol.getId())) {
+            throw new IllegalArgumentException("Ya existe un rol con el nombre: " + rol.getNombre());
+        }
 
+        try {
             return rolRepository.save(rol);
         } catch (DataIntegrityViolationException e) {
             throw new IllegalArgumentException("Violación de integridad al guardar el rol: " + e.getMostSpecificCause().getMessage());
-        } catch (Exception e) {
-            throw new RuntimeException("Error inesperado al guardar el rol", e);
         }
     }
+
 
     @Transactional
     public void delete(Long id) {
