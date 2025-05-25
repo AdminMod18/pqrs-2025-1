@@ -1,5 +1,8 @@
 package com.supermarket.pqrs.model;
 
 public enum TipoRadicado {
-    PETICION, QUEJA, RECLAMO, SUGERENCIA
+    PETICION,
+    QUEJA,
+    RECLAMO,
+    SUGERENCIA
 }

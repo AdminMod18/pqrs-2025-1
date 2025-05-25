@@ -1,12 +1,14 @@
-/*package com.supermarket.pqrs.config;
+package com.supermarket.pqrs.service;
 
 import com.supermarket.pqrs.model.Usuario;
 import com.supermarket.pqrs.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.*;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -17,15 +19,17 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Usuario usuario = usuarioRepository.findByUsername(username)
+        Usuario user = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
-        return new User(
-                usuario.getUsername(),
-                usuario.getPassword(),
-                usuario.getRoles().stream()
-                        .map(rol -> new SimpleGrantedAuthority("ROLE_" + rol.getNombre()))
-                        .collect(Collectors.toList())
+        List<GrantedAuthority> authorities = user.getRoles().stream()
+                .map(rol -> new SimpleGrantedAuthority("ROLE_" + rol.getNombre()))
+                .collect(Collectors.toList());
+
+        return new org.springframework.security.core.userdetails.User(
+                user.getUsername(),
+                user.getPassword(),
+                authorities
         );
     }
-}*/
+}

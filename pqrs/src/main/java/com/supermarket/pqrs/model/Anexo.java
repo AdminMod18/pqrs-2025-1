@@ -1,6 +1,8 @@
 package com.supermarket.pqrs.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 @Entity
@@ -14,12 +16,18 @@ public class Anexo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Nombre del archivo subido
+    @NotBlank
     private String nombreArchivo;
 
-    // Ruta donde se guarda el archivo en el sistema de archivos
+    @NotBlank
     private String rutaArchivo;
 
-    // Tipo de archivo (por ejemplo, PDF, JPG, etc.)
+    @NotBlank
     private String tipoArchivo;
+
+    @OneToOne
+    @JoinColumn(name = "radicado_id")
+    @JsonBackReference
+    private Radicado radicado;
+
 }

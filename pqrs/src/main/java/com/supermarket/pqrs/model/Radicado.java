@@ -1,5 +1,6 @@
 package com.supermarket.pqrs.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,23 +17,30 @@ public class Radicado {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true, nullable = false)
     private String numeroRadicado;
 
+    @Column(nullable = false)
     private LocalDateTime fechaRadicado;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private TipoRadicado tipo;
 
     @Lob
     private String comentarios;
 
-    private String estado; // Nuevo, En proceso, Resuelto, Rechazado
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private EstadoRadicado estado;
 
     private String justificacion;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cliente_id", nullable = false)
     private Cliente cliente;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "radicado", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private Anexo anexo;
 }
