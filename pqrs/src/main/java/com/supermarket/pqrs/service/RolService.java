@@ -1,8 +1,12 @@
 package com.supermarket.pqrs.service;
 
+import com.supermarket.pqrs.exception.ResourceNotFoundException;
 import com.supermarket.pqrs.model.Rol;
+import com.supermarket.pqrs.model.RolNombre;
 import com.supermarket.pqrs.repository.RolRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,10 +27,33 @@ public class RolService {
     }
 
     public Rol save(Rol rol) {
-        return rolRepository.save(rol);
+        try {
+            // Validación: no permitir duplicados
+            Optional<Rol> existente = rolRepository.findByNombre(rol.getNombre());
+            if (existente.isPresent() && !existente.get().getId().equals(rol.getId())) {
+                throw new IllegalArgumentException("Ya existe un rol con el nombre: " + rol.getNombre());
+            }
+
+            return rolRepository.save(rol);
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalArgumentException("Violación de integridad al guardar el rol: " + e.getMostSpecificCause().getMessage());
+        } catch (Exception e) {
+            throw new RuntimeException("Error inesperado al guardar el rol", e);
+        }
     }
 
+    @Transactional
     public void delete(Long id) {
-        rolRepository.deleteById(id);
+        if (!rolRepository.existsById(id)) {
+            throw new ResourceNotFoundException("No se puede eliminar. Rol no encontrado con ID: " + id);
+        }
+
+        try {
+            rolRepository.deleteById(id);
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalArgumentException("No se puede eliminar el rol porque está relacionado con otros datos.");
+        } catch (Exception e) {
+            throw new RuntimeException("Error inesperado al eliminar el rol", e);
+        }
     }
 }

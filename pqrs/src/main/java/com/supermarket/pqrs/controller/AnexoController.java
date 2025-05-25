@@ -1,8 +1,10 @@
 package com.supermarket.pqrs.controller;
 
+import com.supermarket.pqrs.exception.ResourceNotFoundException;
 import com.supermarket.pqrs.model.Anexo;
 import com.supermarket.pqrs.service.AnexoService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,38 +26,35 @@ public class AnexoController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Anexo> getById(@PathVariable Long id) {
-        return anexoService.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        Anexo anexo = anexoService.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Anexo no encontrado con ID: " + id));
+        return ResponseEntity.ok(anexo);
     }
 
     @PostMapping
     public ResponseEntity<Anexo> create(@RequestBody Anexo anexo) {
-        return ResponseEntity.ok(anexoService.save(anexo));
+        return ResponseEntity.status(HttpStatus.CREATED).body(anexoService.save(anexo));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Anexo> update(@PathVariable Long id, @RequestBody Anexo anexo) {
+        anexoService.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se puede actualizar. Anexo no encontrado con ID: " + id));
         anexo.setId(id);
         return ResponseEntity.ok(anexoService.save(anexo));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
+        anexoService.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se puede eliminar. Anexo no encontrado con ID: " + id));
         anexoService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<Anexo> uploadFile(@RequestParam("file") MultipartFile file) {
-        try {
-            Anexo anexo = anexoService.uploadFile(file);
-            return ResponseEntity.ok(anexo);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
+    public ResponseEntity<Anexo> uploadFile(@RequestParam("file") MultipartFile file) throws Exception {
+        Anexo anexo = anexoService.uploadFile(file);
+        return ResponseEntity.status(HttpStatus.CREATED).body(anexo);
     }
-
-
-
 }

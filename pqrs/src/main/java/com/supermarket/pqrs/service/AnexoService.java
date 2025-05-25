@@ -2,14 +2,13 @@ package com.supermarket.pqrs.service;
 
 import com.supermarket.pqrs.model.Anexo;
 import com.supermarket.pqrs.repository.AnexoRepository;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,47 +19,72 @@ public class AnexoService {
 
     private final AnexoRepository anexoRepository;
 
-    // Ruta donde se guardan los archivos
+    // Ruta base donde se guardan los archivos
     private static final String UPLOAD_DIR = "src/main/resources/uploads/";
 
-    // Método para obtener todos los anexos
+    @PostConstruct
+    public void crearDirectorioSiNoExiste() {
+        try {
+            Files.createDirectories(Paths.get(UPLOAD_DIR));
+        } catch (IOException e) {
+            throw new RuntimeException("No se pudo crear el directorio de uploads", e);
+        }
+    }
+
+    // Obtener todos los anexos
     public List<Anexo> findAll() {
         return anexoRepository.findAll();
     }
 
-    // Método para obtener un anexo por su ID
+    // Buscar por ID
     public Optional<Anexo> findById(Long id) {
         return anexoRepository.findById(id);
     }
 
-    // Método para guardar un anexo
+    // Guardar anexo en BD (uso interno)
     public Anexo save(Anexo anexo) {
         return anexoRepository.save(anexo);
     }
 
-    // Método para eliminar un anexo
+    // Eliminar anexo y su archivo físico
     public void delete(Long id) {
-        anexoRepository.deleteById(id);
+        Optional<Anexo> optionalAnexo = anexoRepository.findById(id);
+        optionalAnexo.ifPresent(anexo -> {
+            try {
+                Path path = Paths.get(anexo.getRutaArchivo());
+                Files.deleteIfExists(path);
+            } catch (IOException e) {
+                System.err.println("No se pudo eliminar el archivo físico: " + e.getMessage());
+            }
+            anexoRepository.deleteById(id);
+        });
     }
 
-    // Método para manejar la carga del archivo
+    // Cargar archivo y guardar en BD
     public Anexo uploadFile(MultipartFile file) throws IOException {
-        // Generamos un nombre único para el archivo
-        String uniqueFileName = UUID.randomUUID().toString() + "-" + file.getOriginalFilename();
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("El archivo está vacío");
+        }
 
-        // Creamos la ruta completa donde se guardará el archivo
-        Path path = Paths.get(UPLOAD_DIR + uniqueFileName);
+        String originalFilename = file.getOriginalFilename();
+        String extension = obtenerExtension(originalFilename);
+        String uniqueFileName = UUID.randomUUID() + (extension != null ? "." + extension : "");
 
-        // Guardamos el archivo en el sistema de archivos
-        Files.write(path, file.getBytes());
+        Path destinationPath = Paths.get(UPLOAD_DIR + uniqueFileName);
+        Files.write(destinationPath, file.getBytes(), StandardOpenOption.CREATE);
 
-        // Creamos el objeto Anexo y asignamos los valores
         Anexo anexo = new Anexo();
-        anexo.setNombreArchivo(file.getOriginalFilename());  // Guardamos el nombre original
-        anexo.setRutaArchivo(path.toString());  // Guardamos la ruta completa del archivo
-        anexo.setTipoArchivo(file.getContentType());  // Guardamos el tipo MIME del archivo
+        anexo.setNombreArchivo(originalFilename);
+        anexo.setRutaArchivo(destinationPath.toString());
+        anexo.setTipoArchivo(file.getContentType());
 
-        // Guardamos el anexo en la base de datos
         return anexoRepository.save(anexo);
+    }
+
+    // Utilidad: obtener extensión del archivo
+    private String obtenerExtension(String filename) {
+        if (filename == null) return null;
+        int lastDot = filename.lastIndexOf('.');
+        return lastDot > 0 ? filename.substring(lastDot + 1) : null;
     }
 }
