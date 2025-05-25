@@ -22,10 +22,13 @@ jobs:
 
       - name: 🧪 Construir y correr pruebas
         run: mvn clean test
+        working-directory: ./pqrs  # 👈 Ajusta esto
 
-      - name: 📊 Publicar cobertura con JaCoCo (si usas cobertura)
+      - name: 📊 Publicar cobertura con JaCoCo
         if: always()
         run: mvn jacoco:report
+        working-directory: ./pqrs  # 👈 También aquí
 
       - name: ✅ Verificar calidad del código
         run: mvn checkstyle:check
+        working-directory: ./pqrs  # 👈 Y aquí también
