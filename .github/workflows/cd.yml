@@ -21,22 +21,11 @@ jobs:
 
       - name: 🛠️ Build del proyecto
         run: mvn clean package -DskipTests
-        working-directory: ./pqrs  # ✅ clave
+        working-directory: ./pqrs  # ✅ donde está pom.xml
 
       - name: 🐳 Build imagen Docker
         run: docker build -t pqrs-app .
-        working-directory: ./pqrs  # ✅ donde está el Dockerfile
-
-      - name: 🔐 Login al servidor remoto por SSH
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          script: |
-            docker stop pqrs-app || true
-            docker rm pqrs-app || true
-            docker rmi pqrs-app || true
+        working-directory: ./pqrs  # ✅ donde está Dockerfile
 
       - name: 📦 Exportar imagen Docker como tar
         run: docker save pqrs-app > pqrs-app.tar
@@ -46,16 +35,30 @@ jobs:
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PASSWORD }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
           source: "pqrs-app.tar"
           target: "/home/${{ secrets.SSH_USER }}/"
+
+      - name: 🔐 Detener contenedor anterior si existe
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            docker stop pqrs-app || true
+            docker rm pqrs-app || true
+            docker rmi pqrs-app || true
 
       - name: 🚀 Importar y ejecutar imagen en servidor
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PASSWORD }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
           script: |
             docker load < /home/${{ secrets.SSH_USER }}/pqrs-app.tar
             docker run -d --name pqrs-app -p 8080:8080 pqrs-app
