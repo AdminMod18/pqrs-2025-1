@@ -44,6 +44,18 @@
 			<version>5.11.0</version>
 			<scope>test</scope>
 		</dependency>
+		<!-- ✅ Spring Boot Starter para enviar correos -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+
+		<!-- ✅ Jakarta Mail (si es necesario de forma explícita) -->
+		<dependency>
+			<groupId>com.sun.mail</groupId>
+			<artifactId>jakarta.mail</artifactId>
+			<version>1.6.7</version> <!-- o la versión más reciente compatible -->
+		</dependency>
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-api</artifactId>
