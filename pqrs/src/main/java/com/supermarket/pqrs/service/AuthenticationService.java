@@ -24,7 +24,7 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final RolRepository rolRepository;
-
+    private final EmailService emailService; // 👈 inyectar el servicio de email
 
     public AuthResponse login(AuthRequest request) {
         authenticationManager.authenticate(
@@ -45,30 +45,41 @@ public class AuthenticationService {
         return new AuthResponse("Login exitoso", token);
     }
 
-    // Solo para pruebas o inicialización
     public AuthResponse register(Usuario usuario) {
-        // ✅ Paso 1: cargar los roles persistidos desde la base de datos
-        Set<Rol> rolesPersistidos = usuario.getRoles().stream()
-                .map(r -> rolRepository.findByNombre(r.getNombre())
-                        .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + r.getNombre())))
-                .collect(Collectors.toSet());
+        try {
+            Set<Rol> rolesPersistidos = usuario.getRoles().stream()
+                    .map(r -> rolRepository.findByNombre(r.getNombre())
+                            .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + r.getNombre())))
+                    .collect(Collectors.toSet());
 
-        // ✅ Paso 2: reemplazar los roles del usuario con los persistidos
-        usuario.setRoles(rolesPersistidos);
+            usuario.setRoles(rolesPersistidos);
 
-        // ✅ Paso 3: codificar contraseña y guardar usuario
-        usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
-        usuarioRepository.save(usuario);
+            String rawPassword = usuario.getPassword();
+            usuario.setPassword(passwordEncoder.encode(rawPassword));
+            usuarioRepository.save(usuario);
 
-        // ✅ Paso 4: crear token con authorities de los roles
-        List<GrantedAuthority> authorities = rolesPersistidos.stream()
-                .map(rol -> new SimpleGrantedAuthority("ROLE_" + rol.getNombre()))
-                .collect(Collectors.toList());
+            List<GrantedAuthority> authorities = rolesPersistidos.stream()
+                    .map(rol -> new SimpleGrantedAuthority("ROLE_" + rol.getNombre()))
+                    .collect(Collectors.toList());
 
-        String token = jwtService.generateToken(
-                new User(usuario.getUsername(), usuario.getPassword(), authorities)
-        );
+            String token = jwtService.generateToken(
+                    new User(usuario.getUsername(), usuario.getPassword(), authorities)
+            );
 
-        return new AuthResponse("Login exitoso", token);
+            // ✅ Enviar correo
+            try {
+                emailService.enviarCredenciales(usuario.getEmail(), usuario.getUsername(), rawPassword);
+            } catch (Exception e) {
+                System.err.println("❌ Error al enviar el correo: " + e.getMessage());
+                e.printStackTrace(); // Para ver exactamente qué falló
+            }
+
+            return new AuthResponse("Usuario registrado y correo enviado", token);
+
+        } catch (Exception e) {
+            System.err.println("❌ Error al registrar usuario: " + e.getMessage());
+            e.printStackTrace();
+            return new AuthResponse(null, "Error al registrar el usuario");
+        }
     }
 }
