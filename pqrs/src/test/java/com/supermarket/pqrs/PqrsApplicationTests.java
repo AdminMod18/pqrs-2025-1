@@ -8,6 +8,6 @@ class PqrsApplicationTests {
 
 	@Test
 	void contextLoads() {
+		// Si el contexto se carga correctamente, esta prueba pasará
 	}
-
 }
