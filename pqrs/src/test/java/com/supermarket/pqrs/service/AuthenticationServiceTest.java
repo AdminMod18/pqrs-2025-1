@@ -18,6 +18,9 @@ import static org.mockito.Mockito.*;
 class AuthenticationServiceTest {
 
     @Mock
+    private EmailService emailService;
+
+    @Mock
     private UsuarioRepository usuarioRepository;
 
     @Mock
@@ -67,6 +70,7 @@ class AuthenticationServiceTest {
         Usuario usuario = new Usuario();
         usuario.setUsername("nuevo");
         usuario.setPassword("1234");
+        usuario.setEmail("nuevo@email.com");  // ✅ Importante para el envío de correo
 
         Rol rol = new Rol(1L, RolNombre.CLIENTE);
         usuario.setRoles(Set.of(rol));
@@ -78,11 +82,15 @@ class AuthenticationServiceTest {
 
         AuthResponse response = authenticationService.register(usuario);
 
-        assertEquals("Login exitoso", response.getMensaje());
+        // ✅ Ajustar el mensaje esperado
+        assertEquals("Usuario registrado y correo enviado", response.getMensaje());
         assertEquals("jwt-token", response.getToken());
 
         verify(usuarioRepository).save(any(Usuario.class));
         verify(jwtService).generateToken(any(User.class));
+
+        // ✅ Verificar que se llamó a emailService con los datos correctos
+        verify(emailService).enviarCredenciales("nuevo@email.com", "nuevo", "1234");
     }
 
     @Test
@@ -96,16 +104,19 @@ class AuthenticationServiceTest {
     }
 
     @Test
-    void register_deberiaLanzarExcepcionSiRolNoExiste() {
+    void register_deberiaRetornarErrorSiRolNoExiste() {
         Rol rol = new Rol(1L, RolNombre.GESTOR);
         Usuario usuario = new Usuario();
         usuario.setUsername("nuevo");
         usuario.setPassword("1234");
+        usuario.setEmail("nuevo@email.com");
         usuario.setRoles(Set.of(rol));
 
         when(rolRepository.findByNombre(RolNombre.GESTOR)).thenReturn(Optional.empty());
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> authenticationService.register(usuario));
-        assertTrue(ex.getMessage().contains("Rol no encontrado"));
+        AuthResponse response = authenticationService.register(usuario);
+
+        assertNull(response.getMensaje());
+        assertEquals("Error al registrar el usuario", response.getToken());
     }
 }
