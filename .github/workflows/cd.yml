@@ -21,9 +21,11 @@ jobs:
 
       - name: 🛠️ Build del proyecto
         run: mvn clean package -DskipTests
+        working-directory: ./pqrs  # ✅ clave
 
       - name: 🐳 Build imagen Docker
         run: docker build -t pqrs-app .
+        working-directory: ./pqrs  # ✅ donde está el Dockerfile
 
       - name: 🔐 Login al servidor remoto por SSH
         uses: appleboy/ssh-action@v1.0.0
