@@ -13,7 +13,7 @@ export default function RegisterCliente() {
     e.preventDefault();
     try {
       await registerUser({ ...form, roles: ["GESTOR"] });
-      alert("Registro como CLIENTE exitoso");
+      alert("Registro como GESTOR exitoso");
     } catch (err) {
       console.error(err);
       alert("Error en el registro");
