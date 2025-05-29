@@ -1,42 +1,48 @@
+import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar";
-import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import DashboardUsuario from "./pages/DashboardUsuario";
-import DashboardGestor from "./pages/DashboardGestor";
-import ProtectedRoute from "./components/ProtectedRoute";
-import LandingPage from "./pages/LandingPage";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "./App.css";
+
+import Navbar from "./assets/components/Navbar";
+import Footer from "./assets/components/Footer";
+import Home from "./assets/pages/Home";
+import Login from "./assets/pages/Login";
+import Register from "./assets/pages/Register";
+import Dashboard from "./assets/pages/Dashboard";
+import NotFound from "./assets/pages/NotFound";
+import ProtectedRoute from "./assets/components/ProtectedRoute";
+import PQRSForm from "./assets/components/PQRSForm";
 
 function App() {
   return (
     <Router>
-      <Navbar />
-      <div className="container mt-4">
-        <Routes>
-          <Route path="/home" element={<Home />} />
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          
-          {/* Rutas protegidas */}
-          <Route
-            path="/dashboard-usuario"
-            element={
-              <ProtectedRoute allowedRoles={["CLIENTE"]}>
-                <DashboardUsuario />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard-gestor"
-            element={
-              <ProtectedRoute allowedRoles={["GESTOR"]}>
-                <DashboardGestor />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+      <div className="d-flex flex-column min-vh-100">
+        <Navbar />
+        <main className="flex-fill container py-4">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route
+              path="/crear-pqrs"
+              element={
+                <ProtectedRoute allowedRoles={["CLIENTE"]}>
+                  <PQRSForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={["CLIENTE", "GESTOR"]}>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </main>
+        <Footer />
       </div>
     </Router>
   );
