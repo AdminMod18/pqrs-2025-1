@@ -24,7 +24,7 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final RolRepository rolRepository;
-    private final EmailService emailService; // 👈 inyectar el servicio de email
+    private final EmailService emailService;
 
     public AuthResponse login(AuthRequest request) {
         authenticationManager.authenticate(
@@ -42,14 +42,27 @@ public class AuthenticationService {
                 new User(usuario.getUsername(), usuario.getPassword(), authorities)
         );
 
-        return new AuthResponse("Login exitoso", token);
+        String rol = usuario.getRoles().stream()
+                .findFirst()
+                .map(rolObj -> rolObj.getNombre().name())
+                .orElse("SIN_ROL");
+
+        return AuthResponse.builder()
+                .mensaje("Login exitoso")
+                .token(token)
+                .rol(rol)
+                .build();
     }
 
     public AuthResponse register(Usuario usuario) {
         try {
             Set<Rol> rolesPersistidos = usuario.getRoles().stream()
-                    .map(r -> rolRepository.findByNombre(r.getNombre())
-                            .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + r.getNombre())))
+                    .map(r -> {
+                        String rolNombreStr = r.getNombre().name();
+                        RolNombre rolNombre = RolNombre.valueOf(rolNombreStr.toUpperCase());
+                        return rolRepository.findByNombre(rolNombre)
+                                .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + rolNombre));
+                    })
                     .collect(Collectors.toSet());
 
             usuario.setRoles(rolesPersistidos);
@@ -66,20 +79,31 @@ public class AuthenticationService {
                     new User(usuario.getUsername(), usuario.getPassword(), authorities)
             );
 
-            // ✅ Enviar correo
             try {
                 emailService.enviarCredenciales(usuario.getEmail(), usuario.getUsername(), rawPassword);
             } catch (Exception e) {
                 System.err.println("❌ Error al enviar el correo: " + e.getMessage());
-                e.printStackTrace(); // Para ver exactamente qué falló
             }
 
-            return new AuthResponse("Usuario registrado y correo enviado", token);
+            String rol = rolesPersistidos.stream()
+                    .findFirst()
+                    .map(r -> r.getNombre().name())
+                    .orElse("SIN_ROL");
+
+            return AuthResponse.builder()
+                    .mensaje("Usuario registrado y correo enviado")
+                    .token(token)
+                    .rol(rol)
+                    .build();
 
         } catch (Exception e) {
             System.err.println("❌ Error al registrar usuario: " + e.getMessage());
-            e.printStackTrace();
-            return new AuthResponse(null, "Error al registrar el usuario");
+
+            return AuthResponse.builder()
+                    .mensaje("Error al registrar el usuario")
+                    .token(null)
+                    .rol(null)
+                    .build();
         }
     }
 }
