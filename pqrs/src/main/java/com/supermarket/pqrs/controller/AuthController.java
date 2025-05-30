@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("api/auth")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class AuthController {
@@ -22,10 +22,13 @@ public class AuthController {
         try {
             return ResponseEntity.ok(authService.login(request));
         } catch (IllegalArgumentException | ResourceNotFoundException e) {
-            // Error como usuario no encontrado o contraseña incorrecta
-            return ResponseEntity.badRequest().body(new AuthResponse(null, e.getMessage()));
+            return ResponseEntity.badRequest().body(
+                    new AuthResponse("Error: " + e.getMessage(), null, null)
+            );
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(new AuthResponse(null, "Error interno en el login"));
+            return ResponseEntity.internalServerError().body(
+                    new AuthResponse("Error interno en el login", null, null)
+            );
         }
     }
 
@@ -34,10 +37,13 @@ public class AuthController {
         try {
             return ResponseEntity.ok(authService.register(usuario));
         } catch (IllegalArgumentException e) {
-            // Por ejemplo: usuario duplicado o datos inválidos
-            return ResponseEntity.badRequest().body(new AuthResponse(null, e.getMessage()));
+            return ResponseEntity.badRequest().body(
+                    new AuthResponse("Error: " + e.getMessage(), null, null)
+            );
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(new AuthResponse(null, "Error al registrar el usuario"));
+            return ResponseEntity.internalServerError().body(
+                    new AuthResponse("Error al registrar el usuario", null, null)
+            );
         }
     }
 }

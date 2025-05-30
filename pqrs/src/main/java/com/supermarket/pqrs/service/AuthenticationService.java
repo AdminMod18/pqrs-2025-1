@@ -24,7 +24,7 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final RolRepository rolRepository;
-    private final EmailService emailService; // 👈 inyectar el servicio de email
+    private final EmailService emailService;
 
     public AuthResponse login(AuthRequest request) {
         authenticationManager.authenticate(
@@ -35,14 +35,20 @@ public class AuthenticationService {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         List<GrantedAuthority> authorities = usuario.getRoles().stream()
-                .map(rol -> new SimpleGrantedAuthority("ROLE_" + rol.getNombre()))
+                .map(rol -> new SimpleGrantedAuthority("ROLE_" + rol.getNombre().name()))
                 .collect(Collectors.toList());
 
         String token = jwtService.generateToken(
                 new User(usuario.getUsername(), usuario.getPassword(), authorities)
         );
 
-        return new AuthResponse("Login exitoso", token);
+        // ✅ Obtener rol principal
+        String rol = usuario.getRoles().stream()
+                .findFirst()
+                .map(r -> r.getNombre().name()) // Asumiendo que getNombre() retorna un Enum
+                .orElse("SIN_ROL");
+
+        return new AuthResponse("Login exitoso", token, rol);
     }
 
     public AuthResponse register(Usuario usuario) {
@@ -59,27 +65,30 @@ public class AuthenticationService {
             usuarioRepository.save(usuario);
 
             List<GrantedAuthority> authorities = rolesPersistidos.stream()
-                    .map(rol -> new SimpleGrantedAuthority("ROLE_" + rol.getNombre()))
+                    .map(rol -> new SimpleGrantedAuthority("ROLE_" + rol.getNombre().name()))
                     .collect(Collectors.toList());
 
             String token = jwtService.generateToken(
                     new User(usuario.getUsername(), usuario.getPassword(), authorities)
             );
 
-            // ✅ Enviar correo
             try {
                 emailService.enviarCredenciales(usuario.getEmail(), usuario.getUsername(), rawPassword);
             } catch (Exception e) {
                 System.err.println("❌ Error al enviar el correo: " + e.getMessage());
-                e.printStackTrace(); // Para ver exactamente qué falló
             }
 
-            return new AuthResponse("Usuario registrado y correo enviado", token);
+            // ✅ Obtener rol principal
+            String rol = rolesPersistidos.stream()
+                    .findFirst()
+                    .map(r -> r.getNombre().name())
+                    .orElse("SIN_ROL");
+
+            return new AuthResponse("Usuario registrado y correo enviado", token, rol);
 
         } catch (Exception e) {
             System.err.println("❌ Error al registrar usuario: " + e.getMessage());
-            e.printStackTrace();
-            return new AuthResponse(null, "Error al registrar el usuario");
+            return new AuthResponse("Error al registrar el usuario", null, null);
         }
     }
 }
