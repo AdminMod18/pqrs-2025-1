@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 import org.springframework.security.authentication.*;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -44,7 +45,7 @@ class AuthenticationServiceTest {
     }
 
     @Test
-    void login_deberiaRetornarTokenSiElUsuarioExiste() {
+    void login_deberiaRetornarTokenYRolSiElUsuarioExiste() {
         AuthRequest request = new AuthRequest("testuser", "password");
         Usuario usuario = new Usuario();
         usuario.setUsername("testuser");
@@ -60,17 +61,18 @@ class AuthenticationServiceTest {
 
         assertEquals("Login exitoso", response.getMensaje());
         assertEquals("jwt-token", response.getToken());
+        assertEquals("CLIENTE", response.getRol());
 
         verify(authenticationManager).authenticate(any());
         verify(jwtService).generateToken(any(User.class));
     }
 
     @Test
-    void register_deberiaGuardarUsuarioYRetornarToken() {
+    void register_deberiaGuardarUsuarioYRetornarTokenYRol() {
         Usuario usuario = new Usuario();
         usuario.setUsername("nuevo");
         usuario.setPassword("1234");
-        usuario.setEmail("nuevo@email.com");  // ✅ Importante para el envío de correo
+        usuario.setEmail("nuevo@email.com");
 
         Rol rol = new Rol(1L, RolNombre.CLIENTE);
         usuario.setRoles(Set.of(rol));
@@ -82,14 +84,12 @@ class AuthenticationServiceTest {
 
         AuthResponse response = authenticationService.register(usuario);
 
-        // ✅ Ajustar el mensaje esperado
         assertEquals("Usuario registrado y correo enviado", response.getMensaje());
         assertEquals("jwt-token", response.getToken());
+        assertEquals("CLIENTE", response.getRol());
 
         verify(usuarioRepository).save(any(Usuario.class));
         verify(jwtService).generateToken(any(User.class));
-
-        // ✅ Verificar que se llamó a emailService con los datos correctos
         verify(emailService).enviarCredenciales("nuevo@email.com", "nuevo", "1234");
     }
 
@@ -97,26 +97,28 @@ class AuthenticationServiceTest {
     void login_deberiaLanzarExcepcionSiUsuarioNoExiste() {
         AuthRequest request = new AuthRequest("invalido", "1234");
 
-        when(usuarioRepository.findByUsername("invalido"))
-                .thenReturn(Optional.empty());
+        when(usuarioRepository.findByUsername("invalido")).thenReturn(Optional.empty());
 
+        // Simular que pasa la autenticación pero no se encuentra en base de datos
         assertThrows(RuntimeException.class, () -> authenticationService.login(request));
     }
 
     @Test
     void register_deberiaRetornarErrorSiRolNoExiste() {
-        Rol rol = new Rol(1L, RolNombre.GESTOR);
         Usuario usuario = new Usuario();
         usuario.setUsername("nuevo");
         usuario.setPassword("1234");
         usuario.setEmail("nuevo@email.com");
+
+        Rol rol = new Rol(1L, RolNombre.GESTOR);
         usuario.setRoles(Set.of(rol));
 
         when(rolRepository.findByNombre(RolNombre.GESTOR)).thenReturn(Optional.empty());
 
         AuthResponse response = authenticationService.register(usuario);
 
-        assertNull(response.getMensaje());
-        assertEquals("Error al registrar el usuario", response.getToken());
+        assertEquals("Error al registrar el usuario", response.getMensaje());
+        assertNull(response.getToken());
+        assertNull(response.getRol());
     }
 }
